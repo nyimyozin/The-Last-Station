@@ -600,9 +600,16 @@ func _notification(what: int) -> void:
 		if mode == "play": pause_menu()
 		elif started and mode not in ["cinematic","ending"]: resume_game()
 func quit_game() -> void:
+	set_process(false)
+	set_physics_process(false)
 	for p in sounds.values():
 		p.stop()
 		p.stream = null
+	# Audio playback is retired on the mixer thread, not the render thread.
+	# Let its final mix complete, including on a slow headless CI runner.
+	await get_tree().create_timer(0.25).timeout
+	# Release imported meshes/materials before the renderer shuts down.
+	for child in get_children(): child.queue_free()
 	G.cache.clear()
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -612,6 +619,12 @@ func smoke_tests() -> void:
 	new_game()
 	resume_game()
 	assert(world.points.size()==13)
+	# Imported character must retain all animation targets after export/import.
+	assert(player.limbs.size() == 4 and player.knees.size() == 2 and player.eyes.size() == 2)
+	for joint in player.limbs + player.knees + player.elbows + player.eyes:
+		assert(is_instance_valid(joint))
+	assert(is_instance_valid(player.hair) and is_instance_valid(player.skirt))
+	assert(is_instance_valid(player.ribbon) and is_instance_valid(player.head))
 	interact("cell")
 	assert(state.cell)
 	dials = [0,0,0]

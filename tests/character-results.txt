@@ -1,0 +1,3 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+SMOKE PASS: scene, 13 points, fuse, relay failure/success, memories, tone failure/success, train, disk save/load, concurrent joystick/jump touches, analog auto-run, floor collision, movement, jump, ending and ending reload

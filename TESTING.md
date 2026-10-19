@@ -42,3 +42,19 @@ On a physical Android device, also verify:
 
 The v0.1.0 APK published from the original commit is not rebuilt by these
 source-only changes. A new APK must be exported and tested separately.
+
+## v0.2.0 character verification
+
+- Godot 4.5.1 imported the original embedded-buffer glTF successfully.
+- Gameplay smoke tests passed with the new character, including movement, jump,
+  concurrent touch IDs, puzzles, ending and save/reload.
+- Animation target assertions cover arms, legs, knees, elbows, eyes, hair, skirt,
+  ribbon and head. Character geometry is 23,998 triangles across 15 articulated
+  meshes (material surfaces are merged per joint).
+- Front, three-quarter, back and running-pose frames were rendered with Godot's
+  OpenGL Compatibility renderer on Mesa software rendering. Collar clipping was
+  corrected during inspection. Reproduce with:
+  `godot --path . --script tests/character_preview.gd` (writes `/tmp/character-*.png`).
+- Physical Android performance and cloth clearance during all camera/movement
+  combinations remain manual device checks. Clothing motion is procedural,
+  not a cloth physics simulation.
