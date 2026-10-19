@@ -1,3 +1,9 @@
 .godot/
 *.tmp
 .DS_Store
+
+# The Futaba-chan model is third-party and may not be redistributed.
+art/character/futaba_animated.glb
+art/character/futaba_animated.glb.import
+art/character/*.vrm
+art/character/*.vroid
