@@ -18,6 +18,10 @@ Graphics presets: Low targets 30 FPS without shadows; Balanced targets 60 FPS wi
 
 Desktop controls: WASD/arrows to move; hold right mouse to look; Shift to run; Space to jump; E to interact; J for journal; Escape to pause.
 
+## Experimental Futaba animation branch
+
+On branch `feat/futaba-skeletal-animation`, you can use your **own licensed** Futaba-chan VRM with six authored skeletal clips (idle, walk, run, jump, fall, land) and a Godot AnimationTree. See [FUTABA-SETUP.md](FUTABA-SETUP.md) for local preparation and testing. The avatar asset is intentionally excluded from Git: its author permits game usage but forbids redistribution of the VRM and derivatives. The public build falls back to the original schoolgirl unless the local GLB is present.
+
 ## Open the complete project
 
 Open `project.godot` in **Godot 4.5.1 stable**, let assets import, then press F5. No plugins or external asset downloads are needed to run the project. The station is constructed at runtime; the traveler uses an original authored glTF mesh with articulated limbs, a sailor uniform and layered bob haircut. The model is included, so the game works fully offline.
