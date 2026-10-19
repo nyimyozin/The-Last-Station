@@ -120,7 +120,7 @@ jobs:
           test -s release-build/The-Last-Station.apk
           sha256sum release-build/The-Last-Station.apk
           zip -qr release-build/The-Last-Station-Source.zip . \
-            -x '.git/*' '.godot/*' 'downloads/parts/*' 'release-build/*'
+            -x '.git/*' '.godot/*' 'downloads/parts/*' 'release-build/*' 'art/character/futaba_animated.glb' 'art/character/*.vrm'
       - name: Publish new development release
         env:
           GH_TOKEN: ${{ github.token }}
