@@ -1,3 +1,4 @@
+class_name JumpTouchButton
 extends Control
 signal jump_pressed
 
@@ -13,11 +14,11 @@ func _ready() -> void:
 	title.text = "JUMP"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.add_theme_font_size_override("font_size",20)
 	title.add_theme_color_override("font_color",Color("f4e8c9"))
 	add_child(title)
+	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 func _draw() -> void:
 	var center = size/2.0
 	var radius = minf(size.x,size.y)*0.43
