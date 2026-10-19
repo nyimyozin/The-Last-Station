@@ -28,7 +28,7 @@ def quat(x=0.0, y=0.0, z=0.0):
     cz, sz = math.cos(z / 2), math.sin(z / 2)
     return (sx * cy * cz - cx * sy * sz,
             cx * sy * cz + sx * cy * sz,
-            cx * cy * cz - sx * sy * sz,
+            cx * cy * sz - sx * sy * cz,
             cx * cy * cz + sx * sy * sz)
 
 
