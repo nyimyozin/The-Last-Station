@@ -19,3 +19,26 @@ ARM64 debug APK exported with matching Godot 4.5.1 templates. Signature verified
 ## Remaining verification
 
 No physical Android or emulator installation/launch test was possible here. Sustained 60 FPS, thermals, battery draw, touch ergonomics, all screen ratios/cutouts, OEM-specific behavior and long-running audio/save durability remain unverified. Synthetic tests are not a complete manual playthrough. No user-timed claim of 15–30 minutes is made.
+
+## Mobile control regression checklist (changes after v0.1.0)
+
+The current source smoke test now exercises two independent touch IDs (joystick
+then jump, and jump then joystick), release isolation, and the analog
+walk-to-run speed curve. These new assertions have **not** yet been executed
+in Godot; run the commands above against the updated source before merging.
+
+On a physical Android device, also verify:
+
+- Hold the left stick while repeatedly tapping Jump with a second finger;
+  keep moving during the jump, then reverse the finger order.
+- Hold the right side to orbit the camera while tapping Jump, and confirm
+  neither touch takes control of the other gesture.
+- Tilt the stick slightly to walk, and push to the edge to run. Releasing it
+  must stop motion; a gentle return must slow down without a run toggle.
+- Tap Jump briefly near a ledge and immediately before landing, including
+  at both 30 FPS and 60 FPS quality presets.
+- Open Pause, Journal, and a puzzle while touching the movement controls;
+  gameplay input should not remain stuck after dismissing the overlay.
+
+The v0.1.0 APK published from the original commit is not rebuilt by these
+source-only changes. A new APK must be exported and tested separately.
