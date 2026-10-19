@@ -52,6 +52,9 @@ jobs:
           apt-get update -qq
           apt-get install -y -qq python3
           python3 tests/hand_orientation.py
+      - name: Test optional Futaba animation generator
+        shell: bash
+        run: python3 tools/prepare_futaba.py --self-test
       - name: Import project
         shell: bash
         run: godot --headless --path . --editor --import --quit
@@ -63,6 +66,15 @@ jobs:
           grep -q 'SMOKE PASS' smoke-test.log
           if grep -E 'SCRIPT ERROR|Assertion failed|ERROR:' smoke-test.log; then
             echo "Godot reported errors during the smoke test" >&2
+            exit 1
+          fi
+      - name: Check skeletal animation state machine
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script tests/futaba_motion_test.gd 2>&1 | tee futaba-motion.log
+          grep -q 'FUTABA MOTION PASS' futaba-motion.log
+          if grep -E 'SCRIPT ERROR|Assertion failed|ERROR:' futaba-motion.log; then
             exit 1
           fi
       - name: Export signed ARM64 Android APK
