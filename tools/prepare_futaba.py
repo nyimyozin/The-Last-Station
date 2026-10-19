@@ -94,7 +94,7 @@ def decode_glb(data):
             raise ValueError("Truncated GLB chunk")
         chunks.append((typ, data[pos:pos + size]))
         pos += size
-    if len(chunks) != 2 or chunks[0][0] != b"JSON" or chunks[1][0] != b"BIN\\x00":
+    if len(chunks) != 2 or chunks[0][0] != b"JSON" or chunks[1][0] != b"BIN\x00":
         raise ValueError("Expected JSON + embedded binary GLB chunks")
     return json.loads(chunks[0][1]), bytearray(chunks[1][1])
 
@@ -102,14 +102,14 @@ def decode_glb(data):
 def encode_glb(data, binary):
     j = json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     j += b" " * (-len(j) % 4)
-    binary += b"\\x00" * (-len(binary) % 4)
+    binary += b"\x00" * (-len(binary) % 4)
     return (struct.pack("<4sII", b"glTF", 2, 12 + 8 + len(j) + 8 + len(binary))
             + struct.pack("<I4s", len(j), b"JSON") + j
-            + struct.pack("<I4s", len(binary), b"BIN\\x00") + binary)
+            + struct.pack("<I4s", len(binary), b"BIN\x00") + binary)
 
 
 def append_accessor(model, binary, vectors, width):
-    binary += b"\\x00" * (-len(binary) % 4)
+    binary += b"\x00" * (-len(binary) % 4)
     offset = len(binary)
     for v in vectors:
         binary.extend(struct.pack("<" + "f" * width, *v))
