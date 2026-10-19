@@ -1,3 +1,4 @@
+class_name VirtualStick
 extends Control
 # Each finger owns its control. Read raw touch events rather than relying on
 # emulated mouse clicks (which may only follow the first finger).
