@@ -1,10 +1,15 @@
 class_name Traveler
 extends CharacterBody3D
-const G = preload("res://scripts/geometry.gd")
+const MODEL = preload("res://art/character/schoolgirl.gltf")
 var rig: Node3D
 var limbs: Array[Node3D] = []
-var eyes: Array[MeshInstance3D] = []
-var scarf: MeshInstance3D
+var eyes: Array[Node3D] = []
+var knees: Array[Node3D] = []
+var elbows: Array[Node3D] = []
+var hair: Node3D
+var skirt: Node3D
+var ribbon: Node3D
+var head: Node3D
 var pivot: Node3D
 var spring: SpringArm3D
 var camera: Camera3D
@@ -31,35 +36,18 @@ func _ready() -> void:
 	c.position.y = 0.83
 	add_child(c)
 	floor_snap_length = 0.35
-	rig = Node3D.new()
+	rig = MODEL.instantiate()
 	add_child(rig)
-	G.cylinder(rig,Vector3(0,0.94,0),0.39,0.72,"526c7b",0.25)
-	G.cylinder(rig,Vector3(0,0.59,0),0.40,0.12,"314958",0.38)
-	G.sphere(rig,Vector3(0,1.59,0),Vector3(0.72,0.74,0.64),"d9bc9d")
-	G.sphere(rig,Vector3(0,1.76,0.055),Vector3(0.79,0.55,0.72),"354755")
-	for x in [-0.3,0.3]: G.sphere(rig,Vector3(x,1.54,0.05),Vector3(0.22,0.57,0.52),"354755")
-	for i in range(5):
-		var bang = G.cylinder(rig,Vector3(-0.25+i*0.12,1.72,-0.295),0.085,0.31,"354755",0.02)
-		bang.rotation.z = PI+(i-2)*0.12
-	for x in [-0.145,0.145]:
-		eyes.append(G.sphere(rig,Vector3(x,1.58,-0.295),Vector3(0.115,0.15,0.055),"eee5cd"))
-		eyes.append(G.sphere(rig,Vector3(x,1.57,-0.323),Vector3(0.065,0.105,0.025),"678f92"))
-		eyes.append(G.sphere(rig,Vector3(x,1.57,-0.337),Vector3(0.027,0.07,0.014),"233847"))
-		eyes.append(G.sphere(rig,Vector3(x-0.012,1.6,-0.348),Vector3(0.023,0.026,0.01),"ffffff"))
-	G.box(rig,Vector3(0,1.42,-0.308),Vector3(0.065,0.015,0.016),"a87976")
-	G.cylinder(rig,Vector3(0,1.3,0),0.29,0.17,"c18b65")
-	scarf = G.box(rig,Vector3(0.19,1.12,0.39),Vector3(0.2,0.62,0.06),"c18b65")
-	for y in [0.82,1.02,1.19]: G.sphere(rig,Vector3(0,y,-0.29),Vector3(0.055,0.055,0.025),"d5c89c")
-	G.box(rig,Vector3(0,0.99,0.32),Vector3(0.42,0.48,0.23),"826c57")
-	G.box(rig,Vector3(0,1.16,0.45),Vector3(0.46,0.12,0.12),"ab9272")
-	for i in range(4):
-		var arm = i < 2
-		var l = Node3D.new()
-		rig.add_child(l)
-		l.position = Vector3((-1 if i%2 == 0 else 1)*(0.32 if arm else 0.16),1.16 if arm else 0.61,0)
-		G.cylinder(l,Vector3(0,-0.2,0),0.105,0.4,"526c7b" if arm else "394b59",0.13 if arm else 0.105)
-		G.sphere(l,Vector3(0,-0.44 if arm else -0.48,0 if arm else -0.06),Vector3(0.17,0.2,0.17) if arm else Vector3(0.24,0.22,0.39),"d9bc9d" if arm else "443f41")
-		limbs.append(l)
+	for part in ["LeftArm", "RightArm", "LeftLeg", "RightLeg"]:
+		limbs.append(rig.find_child(part, true, false))
+	for side in ["Left", "Right"]:
+		knees.append(rig.find_child(side+"Knee", true, false))
+		elbows.append(rig.find_child(side+"Elbow", true, false))
+		eyes.append(rig.find_child(side+"Eye", true, false))
+	hair = rig.find_child("Hair", true, false)
+	skirt = rig.find_child("Skirt", true, false)
+	ribbon = rig.find_child("Ribbon", true, false)
+	head = rig.find_child("Head", true, false)
 	apply_toon(rig)
 	pivot = Node3D.new()
 	add_child(pivot)
@@ -78,16 +66,22 @@ func _ready() -> void:
 	camera.far = 600
 	camera.current = true
 func apply_toon(n: Node) -> void:
-	for ch in n.get_children():
-		if ch is MeshInstance3D:
-			var base = ch.material_override as StandardMaterial3D
-			var s = Shader.new()
-			s.code = "shader_type spatial; uniform vec4 ink:source_color; void fragment(){ALBEDO=ink.rgb;ROUGHNESS=1.0;} void light(){float band=dot(NORMAL,LIGHT)>0.35?0.9:0.25;DIFFUSE_LIGHT+=band*ATTENUATION*LIGHT_COLOR/3.14159265;}"
-			var m = ShaderMaterial.new()
-			m.shader = s
-			m.set_shader_parameter("ink",base.albedo_color)
-			ch.material_override = m
-		apply_toon(ch)
+	# Share one shader across imported material surfaces, preserving the palette.
+	var shader = preload("res://art/character/traveler.gdshader")
+	var materials: Dictionary = {}
+	for mesh_node in n.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance = mesh_node as MeshInstance3D
+		mesh_instance.mesh = mesh_instance.mesh.duplicate()
+		for surface_index in range(mesh_instance.mesh.get_surface_count()):
+			var base = mesh_instance.mesh.surface_get_material(surface_index) as StandardMaterial3D
+			if not base: continue
+			var key = base.albedo_color.to_html()
+			if not materials.has(key):
+				var material = ShaderMaterial.new()
+				material.shader = shader
+				material.set_shader_parameter("ink", base.albedo_color)
+				materials[key] = material
+			mesh_instance.mesh.surface_set_material(surface_index, materials[key])
 func look(delta: Vector2) -> void:
 	yaw -= delta.x*0.005
 	pitch = clampf(pitch-delta.y*0.004,-0.85,0.4)
@@ -126,12 +120,28 @@ func _physics_process(dt: float) -> void:
 	phase += dt*moving*2.5
 	if moving > 0.15: rig.rotation.y = lerp_angle(rig.rotation.y,atan2(-velocity.x,-velocity.z),minf(dt*12,1))
 	var swing = sin(phase)*minf(moving*0.18,0.8) if is_on_floor() else 0.25
-	for i in range(4): limbs[i].rotation.x = lerpf(limbs[i].rotation.x,swing*(-1 if i%2 == 0 else 1)*(-0.75 if i<2 else 1.0),dt*12)
-	rig.position.y = absf(sin(phase))*minf(moving*0.015,0.065)-landed*0.3+sin(Time.get_ticks_msec()*0.002)*0.008
-	rig.scale.y = 1-landed*0.35
-	rig.rotation.x = lerpf(rig.rotation.x,-moving*0.015,dt*6)
-	for eye in eyes: eye.visible = fmod(Time.get_ticks_msec()*0.001,4.7)<4.56
-	scarf.rotation.x = -0.35-moving*0.12+sin(Time.get_ticks_msec()*0.004)*0.12
+	var blend = 1.0-exp(-dt*12.0)
+	for i in range(4):
+		limbs[i].rotation.x = lerpf(limbs[i].rotation.x,swing*(-1 if i%2 == 0 else 1)*(-0.65 if i<2 else 1.0),blend)
+	for i in range(2):
+		var stride = sin(phase)*(-1.0 if i == 0 else 1.0)
+		knees[i].rotation.x = lerpf(knees[i].rotation.x, maxf(0.0,-stride)*minf(moving*0.20,0.9) if is_on_floor() else 0.45,blend)
+		elbows[i].rotation.x = lerpf(elbows[i].rotation.x,-0.12-minf(moving*0.07,0.35),blend)
+		limbs[i].rotation.z = (-1.0 if i == 0 else 1.0)*0.08
+	var clock = Time.get_ticks_msec()*0.001
+	rig.position.y = absf(sin(phase))*minf(moving*0.009,0.035)-landed*0.22+sin(clock*2.0)*0.005
+	rig.scale.y = 1-landed*0.18
+	rig.rotation.x = lerpf(rig.rotation.x,-moving*0.012,1.0-exp(-dt*6.0))
+	# Squash the eyelids smoothly rather than making eyeballs disappear.
+	var blink_time = fmod(clock,4.7)
+	var blink = 1.0-0.96*sin(clampf((blink_time-4.48)/0.22,0.0,1.0)*PI)
+	for eye in eyes: eye.scale.y = blink*0.8
+	hair.rotation.x = lerpf(hair.rotation.x,moving*0.018+sin(clock*2.2)*0.025,blend)
+	hair.rotation.z = sin(phase*0.5)*minf(moving*0.006,0.025)
+	skirt.rotation.x = lerpf(skirt.rotation.x,-moving*0.012,blend)
+	skirt.scale.z = 1.0+minf(moving*0.035,0.18)
+	ribbon.rotation.x = sin(clock*3.0)*0.06+moving*0.035
+	head.rotation.z = sin(clock*1.3)*0.012
 	pivot.rotation.y = lerp_angle(pivot.rotation.y,yaw,1-exp(-dt*18))
 	pivot.rotation.x = lerpf(pivot.rotation.x,pitch,1-exp(-dt*18))
 	if is_on_floor() and moving>0.5:

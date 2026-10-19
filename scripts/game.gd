@@ -612,6 +612,12 @@ func smoke_tests() -> void:
 	new_game()
 	resume_game()
 	assert(world.points.size()==13)
+	# Imported character must retain all animation targets after export/import.
+	assert(player.limbs.size() == 4 and player.knees.size() == 2 and player.eyes.size() == 2)
+	for joint in player.limbs + player.knees + player.elbows + player.eyes:
+		assert(is_instance_valid(joint))
+	assert(is_instance_valid(player.hair) and is_instance_valid(player.skirt))
+	assert(is_instance_valid(player.ribbon) and is_instance_valid(player.head))
 	interact("cell")
 	assert(state.cell)
 	dials = [0,0,0]
