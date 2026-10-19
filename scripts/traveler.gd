@@ -16,8 +16,11 @@ var landed = 0.0
 var was_floor = false
 var move_input = Vector2.ZERO
 var enabled = false
-var sprinting = false
 var jump_requested = false
+var jump_buffer = 0.0
+var coyote_time = 0.0
+const JUMP_BUFFER_SECONDS = 0.16
+const COYOTE_SECONDS = 0.10
 signal footstep
 func _ready() -> void:
 	var c = CollisionShape3D.new()
@@ -88,18 +91,33 @@ func apply_toon(n: Node) -> void:
 func look(delta: Vector2) -> void:
 	yaw -= delta.x*0.005
 	pitch = clampf(pitch-delta.y*0.004,-0.85,0.4)
+func movement_speed(stick_strength: float) -> float:
+	# Gentle tilt for walking, full tilt to run. Keyboard still uses Shift.
+	return lerpf(3.0,5.2,smoothstep(0.60,1.0,clampf(stick_strength,0.0,1.0)))
 func _physics_process(dt: float) -> void:
 	var input = move_input if enabled else Vector2.ZERO
+	var using_keyboard = false
 	if enabled:
 		var keyboard = Input.get_vector("left","right","forward","back")
-		if keyboard.length() > 0: input = keyboard
-	var speed = 5.2 if sprinting or Input.is_action_pressed("run") else 3.0
+		if keyboard.length() > 0:
+			input = keyboard
+			using_keyboard = true
+	var speed = 5.2 if Input.is_action_pressed("run") else movement_speed(0.0 if using_keyboard else input.length())
 	var dir = Basis(Vector3.UP,yaw)*Vector3(input.x,0,input.y)
 	velocity.x = move_toward(velocity.x,dir.x*speed,dt*13)
 	velocity.z = move_toward(velocity.z,dir.z*speed,dt*13)
 	if not is_on_floor(): velocity.y -= dt*20
-	if enabled and is_on_floor() and (jump_requested or Input.is_action_just_pressed("jump")): velocity.y = 6.6
+	# Keep short taps until a physics tick and allow near-ledge/landing jumps.
+	if enabled and (jump_requested or Input.is_action_just_pressed("jump")):
+		jump_buffer = JUMP_BUFFER_SECONDS
 	jump_requested = false
+	if not enabled: jump_buffer = 0.0
+	jump_buffer = maxf(0.0,jump_buffer-dt)
+	coyote_time = COYOTE_SECONDS if is_on_floor() else maxf(0.0,coyote_time-dt)
+	if enabled and jump_buffer > 0.0 and coyote_time > 0.0:
+		velocity.y = 6.6
+		jump_buffer = 0.0
+		coyote_time = 0.0
 	move_and_slide()
 	if not was_floor and is_on_floor(): landed = 0.17
 	was_floor = is_on_floor()

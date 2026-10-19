@@ -1,27 +1,105 @@
-name: Publish playable Android build
+name: Build and release Android
 on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'audio/**'
+      - 'art/**'
+      - 'Main.tscn'
+      - 'project.godot'
+      - 'export_presets.cfg'
+      - '.github/workflows/publish-android.yml'
   push:
     branches: [main]
     paths:
-      - 'downloads/parts/**'
+      - 'scripts/**'
+      - 'audio/**'
+      - 'art/**'
+      - 'Main.tscn'
+      - 'project.godot'
+      - 'export_presets.cfg'
+      - 'downloads/RELEASE-NOTES-v0.1.1.md'
       - '.github/workflows/publish-android.yml'
   workflow_dispatch:
+
 permissions:
-  contents: write
+  contents: read
+
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  build-android:
+    name: Godot 4.5.1 smoke tests and APK
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.5.1
     steps:
       - uses: actions/checkout@v4
-      - name: Reassemble and verify original APK
+      - name: Install container's matching Godot templates and Android SDK settings
         shell: bash
         run: |
-          cat downloads/parts/The-Last-Station.apk.part{1,2,3,4} > The-Last-Station.apk
-          echo "56be3ea251e0c48cc27e85edc28286452a439e1f795026e9d93b26f22e0841cc  The-Last-Station.apk" | sha256sum --check
-      - name: Package editable Godot source
-        run: zip -r The-Last-Station-Source.zip . -x '.git/*' 'downloads/parts/*' 'The-Last-Station.apk' 'The-Last-Station-Source.zip'
-      - name: Publish development build
+          set -euo pipefail
+          mkdir -p "$HOME/.config/godot" "$HOME/.local/share/godot/export_templates"
+          cp -a /root/.config/godot/. "$HOME/.config/godot/"
+          cp -a /root/.local/share/godot/export_templates/4.5.1.stable "$HOME/.local/share/godot/export_templates/"
+          godot --version
+      - name: Import project
+        shell: bash
+        run: godot --headless --path . --editor --import --quit
+      - name: Run gameplay and multitouch smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . -- --smoke-test 2>&1 | tee smoke-test.log
+          grep -q 'SMOKE PASS' smoke-test.log
+          if grep -E 'SCRIPT ERROR|Assertion failed|ERROR:' smoke-test.log; then
+            echo "Godot reported errors during the smoke test" >&2
+            exit 1
+          fi
+      - name: Export signed ARM64 Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --export-debug Android The-Last-Station.apk 2>&1 | tee export.log
+          test -s The-Last-Station.apk
+          # Godot can emit nonfatal fontconfig warnings after a successful
+          # headless export. Trust its exit code, file existence and signature.
+          /usr/lib/android-sdk/build-tools/33.0.2/apksigner verify --verbose The-Last-Station.apk
+          sha256sum The-Last-Station.apk
+      - name: Upload tested APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: the-last-station-v0.1.1-android
+          path: The-Last-Station.apk
+          if-no-files-found: error
+
+  publish:
+    name: Publish v0.1.1
+    needs: build-android
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: the-last-station-v0.1.1-android
+          path: release-build
+      - name: Verify and package current source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release-build/The-Last-Station.apk
+          sha256sum release-build/The-Last-Station.apk
+          zip -qr release-build/The-Last-Station-Source.zip . \
+            -x '.git/*' '.godot/*' 'downloads/parts/*' 'release-build/*'
+      - name: Publish new development release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.1.0 The-Last-Station.apk The-Last-Station-Source.zip --target "$GITHUB_SHA" --title "Platform Zero — first playable build" --notes-file downloads/RELEASE-NOTES.md --prerelease
+          gh release create v0.1.1 \
+            release-build/The-Last-Station.apk \
+            release-build/The-Last-Station-Source.zip \
+            --target "$GITHUB_SHA" \
+            --title "Platform Zero — mobile controls update (v0.1.1)" \
+            --notes-file downloads/RELEASE-NOTES-v0.1.1.md \
+            --prerelease

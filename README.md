@@ -1,16 +1,16 @@
 # The Last Station: Platform Zero
 
-Version 0.1.0 — an original, offline third-person 3D mystery chapter for Android, made with Godot 4.5.1.
+Version 0.1.1 — an original, offline third-person 3D mystery chapter for Android, made with Godot 4.5.1.
 
 ## Play
 
-**[Download the Android APK and source](https://github.com/nyimyozin/The-Last-Station/releases/tag/v0.1.0)**
+**[Download the Android APK and source](https://github.com/nyimyozin/The-Last-Station/releases/tag/v0.1.1)**
 
-The publish workflow reassembles the original APK from the parts in `downloads/parts` and verifies its SHA-256 before attaching it to the release. If the release is not available yet, check the repository's Actions tab.
+The GitHub Actions workflow imports and smoke-tests the current Godot sources, exports a newly built Android APK, and publishes v0.1.1 after the tests pass. The previous v0.1.0 APK remains available as its own release. If the latest release is not yet present, check the repository's Actions tab.
 
 Install `The-Last-Station.apk` on an ARM64 Android 7.0+ device with OpenGL ES 3 support. When prompted, allow installation for the app opening the APK. No accounts, network access, ads or purchases are used. The APK is development-signed for direct installation, not a Play Store release. Native libraries support 16 KB memory pages.
 
-Choose New journey. Use the left joystick to walk, drag open space on the right to orbit the camera, and tap Run to toggle faster movement. Jump is at the lower right. Approach glowing objects and tap the contextual prompt. Journal retains memories, objectives and clues. Pause opens settings and save/title options.
+Choose New journey. Use the left joystick to move; a gentle tilt walks and a full tilt runs automatically (no run toggle). Drag open space on the right to orbit the camera. Tap the larger Jump control at the lower right with a second finger while holding the joystick. Jump taps have a short input buffer and ledge grace window. Approach glowing objects and tap the contextual prompt. Journal retains memories, objectives and clues. Pause opens settings and save/title options.
 
 Progress saves after discoveries, puzzle completion, app suspension and returning to the title. Continue restores your journey. Starting over asks before replacing progress. After the ending, you can revisit the station to find the optional fourth memory.
 
@@ -26,7 +26,8 @@ Open `project.godot` in **Godot 4.5.1 stable**, let assets import, then press F5
 - `scripts/world.gd`: station, waiting room, garden, maintenance shed, signal walk, overlook, distant islands, vegetation, train and interaction points.
 - `scripts/traveler.gd`: character, cel shader, acceleration, jumping, procedural animation and SpringArm camera collision.
 - `scripts/geometry.gd`: reusable meshes and materials.
-- `scripts/stick.gd`: touch joystick with finger tracking.
+- `scripts/stick.gd`: touch joystick with finger tracking and analog run.
+- `scripts/jump_button.gd`: independent multitouch Jump control.
 - `audio/`: 11 original synthesized WAV files, including a looping score and ambient wind.
 - `audio/compose.py`: optional audio regeneration, requiring Python and NumPy; prebuilt audio is included.
 - `export_presets.cfg`: ARM64 Android configuration.
@@ -47,6 +48,6 @@ The included development key is configured in the preset: alias `androiddebugkey
 
 This is a compact first playable build, not a commercial-quality finished anime game. Character art uses original procedural low-poly geometry and articulated motion, scarf movement, blinking and landing compression. It does not contain a production skeletal animation library, voice acting or lip sync. Atmosphere uses inexpensive depth fog and shaders rather than true volumetric simulation.
 
-Godot import, the integrated gameplay tests, desktop render inspection and Android package checks are documented in `TESTING.md`. The APK has **not** been installed on a physical phone or emulator here. Mobile frame rate, thermal behavior, simultaneous physical multitouch and speaker/headphone mixing remain unverified. The requested 15–30-minute play time has not been measured with users.
+Godot import, the integrated gameplay tests, desktop render inspection and Android package checks for the original build are documented in `TESTING.md`. The v0.1.1 GitHub Actions workflow also executes the updated gameplay/touch tests before publishing. The APK has **not** been installed on a physical phone or emulator here. Mobile frame rate, thermal behavior, simultaneous physical multitouch and speaker/headphone mixing remain unverified. The requested 15–30-minute play time has not been measured with users.
 
 Original source, story, procedural art, shaders and synthesized audio: MIT license in `LICENSE`. DejaVu Sans and Godot dependencies retain their licenses in `licenses/`. In-game credits expose these notices. No commercial anime assets or music were used.

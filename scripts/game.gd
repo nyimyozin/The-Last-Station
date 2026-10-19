@@ -2,6 +2,7 @@ extends Node3D
 const WORLD = preload("res://scripts/world.gd")
 const PLAYER = preload("res://scripts/traveler.gd")
 const STICK = preload("res://scripts/stick.gd")
+const JUMP_BUTTON = preload("res://scripts/jump_button.gd")
 const G = preload("res://scripts/geometry.gd")
 const MEMORIES = {
 "m1":["01 / THE PROMISE","A little hand closes around yours.\n\n“When the lights go out, wait for me at Platform Zero.”\n\nYou cannot remember who said it. You remember believing them."],
@@ -18,7 +19,8 @@ var cinema: Camera3D
 var hud: Control
 var overlay: Control
 var panel: VBoxContainer
-var stick: Control
+var stick: VirtualStick
+var jump_button: JumpTouchButton
 var objective_label: Label
 var area_label: Label
 var prompt: Button
@@ -158,10 +160,10 @@ func build_ui() -> void:
 	stick = STICK.new()
 	hud.add_child(stick)
 	anchor(stick,Vector4(0,1,0,1),Vector4(28,-216,208,-36))
-	var run = button("Run",func(): player.sprinting = not player.sprinting,hud,72)
-	run.toggle_mode = true
-	anchor(run,Vector4(0,1,0,1),Vector4(226,-99,310,-43))
-	anchor(button("Jump",func(): player.jump_requested = true,hud,90),Vector4(1,1,1,1),Vector4(-133,-113,-30,-45))
+	jump_button = JUMP_BUTTON.new()
+	hud.add_child(jump_button)
+	anchor(jump_button,Vector4(1,1,1,1),Vector4(-160,-177,-30,-47))
+	jump_button.connect("jump_pressed",request_touch_jump)
 	prompt = button("",interact_nearest,hud,240)
 	prompt.add_theme_font_size_override("font_size",17)
 	anchor(prompt,Vector4(0.5,1,0.5,1),Vector4(-220,-102,220,-42))
@@ -177,6 +179,8 @@ func build_ui() -> void:
 	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	fade.color = Color(0.035,0.065,0.09,0)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+func request_touch_jump() -> void:
+	if mode == "play": player.jump_requested = true
 func clear_overlay() -> void:
 	for child in overlay.get_children():
 		overlay.remove_child(child)
@@ -185,7 +189,11 @@ func clear_overlay() -> void:
 func modal(title: String, body: String = "") -> void:
 	clear_overlay()
 	player.enabled = false
+	stick.input_enabled = false
+	jump_button.input_enabled = false
 	stick.reset()
+	jump_button.reset()
+	player.jump_requested = false
 	finger = -1
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var veil = ColorRect.new()
@@ -212,6 +220,10 @@ func modal(title: String, body: String = "") -> void:
 func main_menu() -> void:
 	mode = "menu"
 	player.enabled = false
+	stick.input_enabled = false
+	jump_button.input_enabled = false
+	stick.reset()
+	jump_button.reset()
 	hud.visible = false
 	menu_camera.current = true
 	clear_overlay()
@@ -258,9 +270,13 @@ func new_game() -> void:
 	mode = "dialogue"
 	hud.visible = false
 	modal("00 / PLATFORM ZERO","You wake to a station announcement.\n\nThere is no voice. Only the click before it.\n\nA ticket rests beside you. Beyond the roof, the clouds are below the rails.")
-	button("Open your eyes",func(): resume_game(); toast("Left stick: move · drag the right side: look\nJump to climb. Run to move faster. Examine the glowing ticket.",10); save_game(),panel)
+	button("Open your eyes",func(): resume_game(); toast("Left stick: move · push fully to run\nDrag right side to look · tap JUMP with your other thumb\nExamine the glowing ticket.",10); save_game(),panel)
 func resume_game() -> void:
 	mode = "play"
+	stick.reset()
+	jump_button.reset()
+	stick.input_enabled = true
+	jump_button.input_enabled = true
 	overlay.visible = false
 	for child in overlay.get_children(): child.queue_free()
 	hud.visible = true
@@ -619,15 +635,42 @@ func smoke_tests() -> void:
 	state.power = false
 	continue_game()
 	assert(state.power and state.memories.size()==4 and train_ready)
+	# Two different fingers must move and jump independently in either order.
 	var touch = InputEventScreenTouch.new()
 	touch.index=2
 	touch.pressed=true
-	touch.position=Vector2(140,90)
-	stick._gui_input(touch)
+	touch.position=stick.get_global_rect().position+Vector2(143,90)
+	stick._input(touch)
+	assert(stick.value.x>0.8 and stick.finger==2)
+	var jump_touch = InputEventScreenTouch.new()
+	jump_touch.index=3
+	jump_touch.pressed=true
+	jump_touch.position=jump_button.get_global_rect().get_center()
+	jump_button._input(jump_touch)
+	assert(player.jump_requested and jump_button.finger==3 and stick.finger==2)
 	assert(stick.value.x>0.8)
+	jump_touch.pressed=false
+	jump_button._input(jump_touch)
+	assert(jump_button.finger==-1 and stick.finger==2)
 	touch.pressed=false
-	stick._gui_input(touch)
-	assert(stick.value==Vector2.ZERO)
+	stick._input(touch)
+	assert(stick.value==Vector2.ZERO and stick.finger==-1)
+	player.jump_requested=false
+	# Reversed order: keep Jump held while starting/releasing movement.
+	jump_touch.pressed=true
+	jump_button._input(jump_touch)
+	touch.pressed=true
+	stick._input(touch)
+	assert(jump_button.finger==3 and stick.finger==2 and player.jump_requested)
+	touch.pressed=false
+	stick._input(touch)
+	assert(stick.value==Vector2.ZERO and jump_button.finger==3)
+	jump_touch.pressed=false
+	jump_button._input(jump_touch)
+	assert(jump_button.finger==-1)
+	player.jump_requested=false
+	assert(player.movement_speed(0.4)<player.movement_speed(0.8))
+	assert(player.movement_speed(0.8)<player.movement_speed(1.0))
 	player.position=Vector3(0,0.1,10)
 	for i in range(30): await get_tree().physics_frame
 	assert(player.is_on_floor())
@@ -644,7 +687,7 @@ func smoke_tests() -> void:
 	continue_game()
 	assert(mode=="ending")
 	DirAccess.remove_absolute(save_path)
-	print("SMOKE PASS: scene, 13 points, fuse, relay failure/success, memories, tone failure/success, train, disk save/load, joystick press/release, floor collision, movement, jump, ending and ending reload")
+	print("SMOKE PASS: scene, 13 points, fuse, relay failure/success, memories, tone failure/success, train, disk save/load, concurrent joystick/jump touches, analog auto-run, floor collision, movement, jump, ending and ending reload")
 	await quit_game()
 func capture_views() -> void:
 	new_game()
