@@ -19,8 +19,8 @@ var cinema: Camera3D
 var hud: Control
 var overlay: Control
 var panel: VBoxContainer
-var stick: Control
-var jump_button: Control
+var stick: VirtualStick
+var jump_button: JumpTouchButton
 var objective_label: Label
 var area_label: Label
 var prompt: Button
@@ -655,6 +655,19 @@ func smoke_tests() -> void:
 	touch.pressed=false
 	stick._input(touch)
 	assert(stick.value==Vector2.ZERO and stick.finger==-1)
+	player.jump_requested=false
+	# Reversed order: keep Jump held while starting/releasing movement.
+	jump_touch.pressed=true
+	jump_button._input(jump_touch)
+	touch.pressed=true
+	stick._input(touch)
+	assert(jump_button.finger==3 and stick.finger==2 and player.jump_requested)
+	touch.pressed=false
+	stick._input(touch)
+	assert(stick.value==Vector2.ZERO and jump_button.finger==3)
+	jump_touch.pressed=false
+	jump_button._input(jump_touch)
+	assert(jump_button.finger==-1)
 	player.jump_requested=false
 	assert(player.movement_speed(0.4)<player.movement_speed(0.8))
 	assert(player.movement_speed(0.8)<player.movement_speed(1.0))
