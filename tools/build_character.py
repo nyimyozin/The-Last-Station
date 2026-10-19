@@ -114,7 +114,8 @@ for side,s in [('Left',-1),('Right',1)]:
     loft(elbow,'navy',[(-.175,.041,.045,-.008),(-.213,.039,.043,-.008)])
     loft(elbow,'trim',[(-.187,.042,.046,-.008),(-.193,.042,.046,-.008)])
     ellipsoid(elbow,'skin',(0,-.255,-.007),(.034,.061,.025))
-    ellipsoid(elbow,'skin',(-s*.031,-.24,-.017),(.015,.031,.015))
+    # In anatomical rest pose the thumbs face laterally (away from the torso) and slightly forward.
+    ellipsoid(elbow,'skin',(s*.031,-.24,-.017),(.015,.031,.015))
 # Face: jaw and cheek loops are authored instead of a sphere.
 head=node('Head',(0,1.535,0),root)
 loft(head,'skin',[(-.155,.015,.02,-.047),(-.143,.054,.047,-.033),(-.115,.095,.071,-.02),(-.08,.123,.09,-.01),(-.025,.146,.105,0),(.04,.151,.116,.008),(.10,.135,.105,.013),(.145,.094,.075,.016),(.17,.018,.02,.016)],48)
