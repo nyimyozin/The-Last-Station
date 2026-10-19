@@ -10,7 +10,7 @@ The publish workflow reassembles the original APK from the parts in `downloads/p
 
 Install `The-Last-Station.apk` on an ARM64 Android 7.0+ device with OpenGL ES 3 support. When prompted, allow installation for the app opening the APK. No accounts, network access, ads or purchases are used. The APK is development-signed for direct installation, not a Play Store release. Native libraries support 16 KB memory pages.
 
-Choose New journey. Use the left joystick to walk, drag open space on the right to orbit the camera, and tap Run to toggle faster movement. Jump is at the lower right. Approach glowing objects and tap the contextual prompt. Journal retains memories, objectives and clues. Pause opens settings and save/title options.
+Choose New journey. Use the left joystick to move; a gentle tilt walks and a full tilt runs automatically (no run toggle). Drag open space on the right to orbit the camera. Tap the larger Jump control at the lower right with a second finger while holding the joystick. Jump taps have a short input buffer and ledge grace window. Approach glowing objects and tap the contextual prompt. Journal retains memories, objectives and clues. Pause opens settings and save/title options.
 
 Progress saves after discoveries, puzzle completion, app suspension and returning to the title. Continue restores your journey. Starting over asks before replacing progress. After the ending, you can revisit the station to find the optional fourth memory.
 
