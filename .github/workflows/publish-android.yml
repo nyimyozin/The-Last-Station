@@ -68,6 +68,15 @@ jobs:
             echo "Godot reported errors during the smoke test" >&2
             exit 1
           fi
+      - name: Check skeletal animation state machine
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script tests/futaba_motion_test.gd 2>&1 | tee futaba-motion.log
+          grep -q 'FUTABA MOTION PASS' futaba-motion.log
+          if grep -E 'SCRIPT ERROR|Assertion failed|ERROR:' futaba-motion.log; then
+            exit 1
+          fi
       - name: Export signed ARM64 Android APK
         shell: bash
         run: |
