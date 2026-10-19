@@ -22,7 +22,7 @@ on:
       - 'Main.tscn'
       - 'project.godot'
       - 'export_presets.cfg'
-      - 'downloads/RELEASE-NOTES-v0.2.1.md'
+      - 'downloads/RELEASE-NOTES-v0.2.2.md'
       - '.github/workflows/publish-android.yml'
   workflow_dispatch:
 
@@ -90,12 +90,12 @@ jobs:
       - name: Upload tested APK
         uses: actions/upload-artifact@v4
         with:
-          name: the-last-station-v0.2.1-android
+          name: the-last-station-v0.2.2-android
           path: The-Last-Station.apk
           if-no-files-found: error
 
   publish:
-    name: Publish v0.2.1
+    name: Publish v0.2.2
     needs: build-android
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
@@ -105,8 +105,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: the-last-station-v0.2.1-android
+          name: the-last-station-v0.2.2-android
           path: release-build
+      - name: Verify proprietary character is explicitly supplied
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Do not publish a misleading v0.2.2 APK with the fallback avatar.
+          test -s art/character/futaba_animated.glb || { echo "Missing private Futaba asset; release blocked" >&2; exit 1; }
       - name: Verify and package current source
         shell: bash
         run: |
@@ -119,10 +125,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.2.1 \
+          gh release create v0.2.2 \
             release-build/The-Last-Station.apk \
             release-build/The-Last-Station-Source.zip \
             --target "$GITHUB_SHA" \
-            --title "Platform Zero — hand orientation hotfix (v0.2.1)" \
-            --notes-file downloads/RELEASE-NOTES-v0.2.1.md \
+            --title "Platform Zero — Futaba animation candidate (v0.2.2)" \
+            --notes-file downloads/RELEASE-NOTES-v0.2.2.md \
             --prerelease
