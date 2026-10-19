@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . -- --smoke-test 2>&1 | tee smoke-test.log
+          godot --headless --verbose --path . -- --smoke-test 2>&1 | tee smoke-test.log
           grep -q 'SMOKE PASS' smoke-test.log
           if grep -E 'SCRIPT ERROR|Assertion failed|ERROR:' smoke-test.log; then
             echo "Godot reported errors during the smoke test" >&2

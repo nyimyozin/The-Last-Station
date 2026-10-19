@@ -600,9 +600,13 @@ func _notification(what: int) -> void:
 		if mode == "play": pause_menu()
 		elif started and mode not in ["cinematic","ending"]: resume_game()
 func quit_game() -> void:
+	set_process(false)
+	set_physics_process(false)
 	for p in sounds.values():
 		p.stop()
 		p.stream = null
+	# Release imported meshes/materials before the renderer shuts down.
+	for child in get_children(): child.queue_free()
 	G.cache.clear()
 	await get_tree().process_frame
 	await get_tree().process_frame
