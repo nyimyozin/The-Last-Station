@@ -47,7 +47,11 @@ jobs:
           godot --version
       - name: Check hand mesh orientation
         shell: bash
-        run: python3 tests/hand_orientation.py
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          apt-get install -y -qq python3
+          python3 tests/hand_orientation.py
       - name: Import project
         shell: bash
         run: godot --headless --path . --editor --import --quit
