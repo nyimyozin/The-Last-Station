@@ -1,0 +1,27 @@
+name: Publish playable Android build
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'downloads/parts/**'
+      - '.github/workflows/publish-android.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reassemble and verify original APK
+        shell: bash
+        run: |
+          cat downloads/parts/The-Last-Station.apk.part{1,2,3,4} > The-Last-Station.apk
+          echo "56be3ea251e0c48cc27e85edc28286452a439e1f795026e9d93b26f22e0841cc  The-Last-Station.apk" | sha256sum --check
+      - name: Package editable Godot source
+        run: zip -r The-Last-Station-Source.zip . -x '.git/*' 'downloads/parts/*' 'The-Last-Station.apk' 'The-Last-Station-Source.zip'
+      - name: Publish development build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.1.0 The-Last-Station.apk The-Last-Station-Source.zip --target "$GITHUB_SHA" --title "Platform Zero — first playable build" --notes-file downloads/RELEASE-NOTES.md --prerelease
