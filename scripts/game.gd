@@ -605,6 +605,9 @@ func quit_game() -> void:
 	for p in sounds.values():
 		p.stop()
 		p.stream = null
+	# Audio playback is retired on the mixer thread, not the render thread.
+	# Let its final mix complete, including on a slow headless CI runner.
+	await get_tree().create_timer(0.25).timeout
 	# Release imported meshes/materials before the renderer shuts down.
 	for child in get_children(): child.queue_free()
 	G.cache.clear()
